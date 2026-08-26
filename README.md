@@ -1,126 +1,155 @@
-# The Lenny Growth Assistant (`oogwayylabs`)
+# Lenny Growth Assistant
 
-**A production-ready, grounded AI assistant that answers product management and growth questions using Lenny's Podcast transcripts.**
+A grounded assistant for product-management and growth questions. It retrieves
+evidence from Lenny's Podcast transcripts using the Python/LangChain RAG layer,
+then sends that evidence to a project-local Node Pi Agent for response
+orchestration. It supports Gemini and a local Ollama model.
 
-The system combines a hybrid multi-LLM runtime (Cloud Gemini 3.6 Flash + Local Ollama `llama3.1:8b`), a persistent PostgreSQL `pgvector` knowledge base (Supabase Cloud or local Docker container), and a persistent Node.js Pi Agent orchestrator.
+## Evaluator quick start (Docker)
 
----
+This is the supported evaluation path. You need Docker Desktop, Docker Compose,
+an internet connection for the first Ollama-model download, and a Gemini API key
+for the default cloud chat provider and semantic embeddings.
 
-## 📚 Documentation Sitemap
+1. Clone the repository and create your environment file.
 
-Detailed specifications and architectural guides are available in the repository:
+   ```bash
+   git clone <repository-url>
+   cd oogwayylabs
+   cp .env.example .env
+   ```
 
-- 📄 [**Product Requirement Document (PRD)**](docs/prd.md): User personas, problem statement, success metrics, product scope, and acceptance criteria.
-- 🎨 [**Design Specification**](docs/design.md): UI/UX design principles, information architecture, interaction states, responsive layouts, and accessibility.
-- 🏗️ [**Architecture Specification**](docs/architecture.md): Complete database schema, API endpoints, component boundaries, RAG retrieval pipeline, model toggle, and deployment topology.
-- 🤖 [**Agent Specification (AGENT.md)**](agent-transcripts/AGENT.md): Detailed description of Pi Agent runtime, tool RPC interfaces, single 3072-dimension vector embedding contracts, and active model state switching.
+   On Windows PowerShell, use:
 
----
+   ```powershell
+   Copy-Item .env.example .env
+   ```
 
-## ⚡ Quick Start — One-Command Docker Setup
+2. Edit `.env` and set at least:
 
-The entire system is containerized for seamless evaluation with **one command**:
+   ```env
+   GEMINI_API_KEY="your-real-key"
+   ```
 
-### 1. Clone & Set Environment
+   Leave `DATABASE_URL=""` to use the included PostgreSQL + pgvector
+   container. Keep `OLLAMA_MODEL="llama3.1:8b"` unless you intentionally want
+   another locally supported model.
 
-```bash
-git clone https://github.com/your-org/oogwayylabs.git
-cd oogwayylabs
+3. Build and start everything.
 
-# Copy environment template
-cp .env.example .env
-```
+   ```bash
+   docker compose up --build
+   ```
 
-Ensure `.env` contains your Gemini API key:
-```env
-GEMINI_API_KEY="your-gemini-api-key-here"
-```
+4. Open the application at <http://localhost:3000>.
 
-### 2. Launch Container Environment
+   Useful checks:
 
-```bash
-docker compose up --build
-```
+   ```bash
+   curl http://localhost:8000/api/v1/health
+   curl http://localhost:8000/api/v1/health/ready
+   ```
 
-Access the application in your browser once startup completes:
-- 🌐 **Frontend Application**: [http://localhost:3000](http://localhost:3000)
-- ⚙️ **FastAPI Backend Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- 🤖 **Pi Agent Service**: Port 8001 (internal container service)
-- 🦙 **Ollama Service**: Port 11434 (`llama3.1:8b` auto-downloaded on launch)
-
----
-
-## 🏗️ Architecture Overview
-
-```
-User's Browser (http://localhost:3000)
-    │
-    ▼
-[Frontend] Nginx (React UI / HTML5 / CSS3)
-    │
-    ▼
-[Backend] FastAPI (Python 3.12, Port 8000)
-    ├─► [Pi Agent] Persistent Node.js service (Port 8001 internal)
-    ├─► [Database] PostgreSQL + pgvector (Supabase Cloud OR Local Docker)
-    └─► [LLM Runtime] Cloud Gemini 3.6 Flash OR Local Ollama (llama3.1:8b)
-```
-
-### Core Services Summary
-
-| Service | Type | Purpose | Setup |
-|---------|------|---------|-------|
-| **Gemini 3.6 Flash** | Cloud LLM | Primary chat & 3072-dim embeddings | Free API key from Google AI Studio |
-| **Ollama (llama3.1:8b)** | Local LLM | Privacy-first local LLM alternative | Auto-downloaded and run inside Docker container |
-| **PostgreSQL + pgvector** | Vector Database | Stores transcript chunks, chat sessions & artifacts | Connects to Cloud Supabase (default in `.env`) or local Docker pgvector |
-| **Pi Agent** | Orchestrator | Handles turn-taking, prompt grounding, and tool execution | Built-in Node.js runtime inside backend container |
-
----
-
-## 🔑 Key Features & Technical Decisions
-
-### 1. Strict 3072-Dimension Embedding Contract
-- The system uses Google Gemini Embeddings (`gemini-embedding-001`) with exactly **3072 dimensions**.
-- Mismatched 768-dim fallback models (`GEMINI_EMBED_FALLBACK_MODELS=""`) are disabled in `.env` and `config.py` to prevent vector dimension mismatch errors against the PostgreSQL `vector(3072)` column schema.
-
-### 2. Active Model Switching
-- Users can switch between **Cloud Gemini** and **Local Ollama** seamlessly using the UI model switcher.
-- Switching updates the active provider state via `PUT /api/v1/models/current`, and all subsequent chat requests inherit the active provider selection automatically.
-
-### 3. Grounded RAG Retrieval
-- Ingests canonical markdown files from GitHub (`ChatPRD/lennys-podcast-transcripts`).
-- Computes hybrid similarity scores combining cosine vector distance and PostgreSQL GIN full-text keyword ranking.
-- All factual claims include source citations formatted as `[Episode: Guest Name - Episode Title]` with direct links to transcript lines.
-
-### 4. Interactive Artifact Builder
-- Complex frameworks, HTML calculators, matrix cards, and 1,250-word Ship 30 essays open in a dedicated side-by-side **Artifact Panel** for rich inspection.
-
----
-
-## ⚙️ Environment Variables Reference
-
-| Variable | Default Value | Description |
-|----------|---------------|-------------|
-| `PROJECT_NAME` | `The Lenny Growth Assistant` | Application display name |
-| `PORT` | `8000` | FastAPI server port |
-| `DATABASE_URL` | Supabase URI | PostgreSQL connection string (Supabase Cloud or local Docker) |
-| `GEMINI_API_KEY` | *(Required)* | Google Gemini API key |
-| `GEMINI_CHAT_MODEL` | `gemini-3.6-flash` | Primary cloud chat LLM |
-| `GEMINI_EMBED_MODEL` | `gemini-embedding-001` | Primary vector embedding model (3072 dimensions) |
-| `GEMINI_EMBED_FALLBACK_MODELS` | `""` | Disabled to maintain 3072-dim vector contract |
-| `VECTOR_DIMENSIONS` | `3072` | Embedding vector column dimensions |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama service URL |
-| `OLLAMA_MODEL` | `llama3.1:8b` | Local Ollama model name |
-
----
-
-## 🧪 Testing & System Diagnostics
-
-To run system health checks and configuration verification:
+The first startup is slow because Docker downloads the Ollama image/model and
+the backend starts transcript ingestion. The app can open before ingestion
+finishes, but transcript-grounded answers are available only after the knowledge
+base has indexed relevant content. Monitor it with:
 
 ```bash
-# Verify Gemini configuration (no hardcoded fallbacks, 3072-dim setup)
-python test_gemini_config.py
-
-# Run system integration test suite
-venv/Scripts/python.exe backend/test_system.py
+docker compose logs -f backend
+curl http://localhost:8000/api/v1/knowledge/status
 ```
+
+To stop the stack while preserving the database and model cache:
+
+```bash
+docker compose down
+```
+
+Do not use `docker compose down -v` unless you deliberately want to delete the
+local PostgreSQL data and downloaded Ollama models.
+
+## Local development (without Docker)
+
+This is the intended workflow for the project owner. Ollama must be installed
+and running on the computer; Pi dependencies remain inside `pi_agent/` and are
+never installed globally.
+
+Prerequisites:
+
+- Python 3.12 and a virtual environment at `venv/`
+- Node.js 22.19 or later (the repository includes a Windows Node binary fallback)
+- Ollama running at `http://localhost:11434`
+- A PostgreSQL/pgvector database configured in `.env` if persistent RAG and
+  sessions are required
+
+Initial setup:
+
+```powershell
+venv\Scripts\python.exe -m pip install -r requirements.txt
+Set-Location pi_agent
+npm ci
+Set-Location ..
+```
+
+Copy `.env.example` to `.env`, then configure `DATABASE_URL`, `GEMINI_API_KEY`,
+and any desired models. Start Ollama separately, for example:
+
+```powershell
+ollama serve
+```
+
+In another PowerShell window, start the application:
+
+```powershell
+.\scripts\start-dev.ps1
+```
+
+The launcher starts the project-local Pi service, waits for its health endpoint,
+then starts FastAPI at <http://127.0.0.1:8000>. Serve the static `frontend/`
+directory with any static web server, or open it through the Docker frontend
+when evaluating the complete stack.
+
+## Configuration
+
+All runtime settings are in `.env`; `.env.example` is the complete template.
+
+| Setting | Purpose |
+| --- | --- |
+| `GEMINI_API_KEY` | Required for Gemini chat and Gemini embeddings. |
+| `GEMINI_CHAT_MODEL` | Cloud model used when the UI selects Cloud. |
+| `GEMINI_EMBED_MODEL` / `VECTOR_DIMENSIONS` | Must remain compatible; default is `gemini-embedding-001` and `3072`. |
+| `OLLAMA_MODEL` | Local model used when the UI selects Ollama. |
+| `DATABASE_URL` | Leave blank for Docker PostgreSQL; set it for a local/Supabase database. |
+| `INGEST_MAX_EPISODES` | `0` indexes all source transcripts; use a small number only for development. |
+| `RAG_SIMILARITY_THRESHOLD` | Minimum retrieval score; raise for stricter evidence, lower for broader recall. |
+| `PI_AGENT_PORT` / `PI_AGENT_URL` | Local Pi Agent service address. |
+
+## Architecture and behavior
+
+```text
+Browser → Frontend → FastAPI → Pi Agent → Gemini or Ollama
+                         │
+                         └→ LangChain RAG → PostgreSQL + pgvector
+```
+
+- RAG retrieval is performed before grounded product/growth answers, Ship30
+  essays, and factual artifacts.
+- When no relevant transcript evidence is found, the assistant states that the
+  available transcripts do not directly support the answer.
+- The Pi Agent dependencies are locked in `pi_agent/package-lock.json` and are
+  installed locally with `npm ci` or inside the evaluator Docker image.
+- Chat sessions and generated artifacts are persisted only when `DATABASE_URL`
+  points to a reachable database.
+
+## Verification
+
+Run the included unit tests from the repository root:
+
+```powershell
+Set-Location backend
+..\venv\Scripts\python.exe -m pytest tests -q
+```
+
+These tests cover API basics and transcript parsing. They do not replace a live
+end-to-end check with your selected database, LLM provider, and transcript sync.
