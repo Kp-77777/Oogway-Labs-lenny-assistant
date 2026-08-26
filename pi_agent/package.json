@@ -1,0 +1,14 @@
+{
+  "name": "lenny-growth-assistant-pi-agent",
+  "version": "1.0.0",
+  "description": "Persistent Pi Agent service for Lenny Growth Assistant",
+  "main": "agent_service.js",
+  "type": "module",
+  "scripts": {
+    "start": "node agent_service.js"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "^0.84.3",
+    "@earendil-works/pi-ai": "^0.84.3"
+  }
+}
