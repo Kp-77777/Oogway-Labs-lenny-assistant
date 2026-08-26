@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lenny Growth Assistant</title>
+  
+  <!-- Google Fonts: Inter & Source Serif 4 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+  
+  <!-- Material Symbols Outlined Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- Vanilla Pure CSS Stylesheet -->
+  <link rel="stylesheet" href="./css/styles.css?v=2">
+</head>
+<body>
+  <div id="app">
+    
+    <!-- Mobile Drawer Backdrop Overlay -->
+    <div id="drawer-backdrop" class="drawer-backdrop"></div>
+
+    <!-- ==========================================================================
+         1. Left Navigation Sidebar
+         ========================================================================== -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-avatar">L</div>
+        <div class="brand-text">
+          <h2>Lenny Assistant</h2>
+          <p>AI Workspace</p>
+        </div>
+      </div>
+
+      <button id="btn-new-chat" class="btn-new-chat">
+        <span class="material-symbols-outlined">add</span>
+        <span>New Chat</span>
+      </button>
+
+      <div class="sidebar-nav hide-scrollbar">
+        <!-- History: Today -->
+        <div class="nav-section-title">Today</div>
+        <div id="history-today" class="history-group">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- History: Yesterday -->
+        <div class="nav-section-title">Yesterday</div>
+        <div id="history-yesterday" class="history-group">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- History: Previous 7 Days -->
+        <div class="nav-section-title">Previous 7 Days</div>
+        <div id="history-previous" class="history-group">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Workspace Nav Links -->
+        <div class="nav-section-title">Workspace</div>
+        <button id="nav-knowledge-base" class="nav-item">
+          <span class="material-symbols-outlined">dataset</span>
+          <span class="truncate">Knowledge Base</span>
+          <span id="sidebar-kb-count" class="nav-badge">142 ep</span>
+        </button>
+        <button id="nav-open-artifact" class="nav-item">
+          <span class="material-symbols-outlined">dashboard_customize</span>
+          <span class="truncate">Artifact Viewer</span>
+          <span id="sidebar-artifact-status" class="nav-badge active">Ready</span>
+        </button>
+      </div>
+
+      <!-- Footer & User Profile -->
+      <div class="sidebar-footer">
+        <button id="nav-settings" class="nav-item">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="truncate">Model Settings</span>
+        </button>
+        <div class="user-profile-badge">
+          <div class="user-avatar">PM</div>
+          <div class="user-info">
+            <span class="user-name">Lenny Member</span>
+            <span class="user-plan">Pro Plan • Local First</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==========================================================================
+         2. Main Application Container
+         ========================================================================== -->
+    <main class="main-container">
+      
+      <!-- Top App Bar -->
+      <header id="top-app-bar" class="top-app-bar">
+        <div class="topbar-left">
+          <button id="btn-mobile-menu" class="btn-mobile-menu" aria-label="Open navigation menu">
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+          <button id="btn-desktop-toggle-sidebar" class="btn-icon btn-desktop-toggle" title="Toggle Sidebar">
+            <span class="material-symbols-outlined">dock_to_left</span>
+          </button>
+          <h1 id="topbar-view-title" class="topbar-title">Lenny Assistant</h1>
+        </div>
+
+        <!-- Model Mode Tabs -->
+        <nav class="model-tabs-nav" aria-label="Model Selection">
+          <button id="tab-model-ollama" class="model-tab" data-provider="ollama">
+            Ollama Local
+          </button>
+          <button id="tab-model-cloud" class="model-tab active" data-provider="cloud">
+            Cloud
+          </button>
+        </nav>
+
+        <!-- Right Controls -->
+        <div class="topbar-right">
+          <div id="provider-status-badge" class="provider-status-badge" title="Model server status. Click to test connection.">
+            <span id="provider-status-dot" class="status-dot ready pulse"></span>
+            <span id="provider-status-text">Ready</span>
+          </div>
+          
+          <button id="btn-toggle-artifact" class="btn-icon" title="Toggle Artifact Viewer Panel">
+            <span class="material-symbols-outlined">splitscreen</span>
+          </button>
+
+          <button id="btn-more-options" class="btn-icon" title="More Options">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Workspace Content (Chat View + Artifact Viewer) -->
+      <div id="workspace-content" class="workspace-content">
+        
+        <!-- ======================================================================
+             A. Primary Chat Pane
+             ====================================================================== -->
+        <section id="chat-pane" class="chat-pane">
+          <div id="chat-scroll-area" class="chat-scroll-area">
+            <div class="chat-inner-container">
+              
+              <!-- 1. Welcome / Empty Canvas State -->
+              <div id="welcome-canvas" class="welcome-canvas">
+                <h2 class="welcome-title">What are you working on?</h2>
+                <p class="welcome-subtitle">
+                  Ask product and growth questions grounded in Lenny’s Podcast conversations.
+                </p>
+
+                <div class="prompts-grid">
+                  <div class="prompt-card featured" data-prompt="What are the biggest lessons about product-market fit according to Lenny's guests?">
+                    What are the biggest lessons about product-market fit?
+                  </div>
+                  <div class="prompt-card" data-prompt="How do great products improve user onboarding and reduce drop-off?">
+                    How do great products improve onboarding?
+                  </div>
+                  <div class="prompt-card" data-prompt="What do Lenny's guests say about sustainable product growth and growth loops?">
+                    What do Lenny’s guests say about product growth?
+                  </div>
+                  <div class="prompt-card" data-prompt="Turn the lessons about retention and GTM into a detailed marketing strategy plan.">
+                    Turn the lessons about retention into a marketing plan.
+                  </div>
+                  <div class="prompt-card" data-prompt="Create a landing page concept based on these growth and speed principles.">
+                    Create a landing page based on these growth principles.
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Active Message Thread -->
+              <div id="messages-thread" class="messages-thread" style="display: none;">
+                <!-- Dynamically populated messages -->
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 3. Floating Bottom Composer Dock -->
+          <div class="composer-dock">
+            <div class="composer-card">
+              <button id="btn-attach" class="btn-icon" title="Add prompt preset or attachment">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+              <button id="btn-image-attach" class="btn-icon" title="Upload reference screenshot or image">
+                <span class="material-symbols-outlined">image</span>
+              </button>
+
+              <textarea 
+                id="composer-input" 
+                class="composer-input hide-scrollbar" 
+                placeholder="Message Lenny Assistant..." 
+                rows="1"
+              ></textarea>
+
+              <button id="btn-send" class="btn-send" title="Send Message" disabled>
+                <span class="material-symbols-outlined">arrow_upward</span>
+              </button>
+            </div>
+            <div class="composer-disclaimer">
+              AI can make mistakes. Verify important product decisions with official transcripts.
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================================
+             B. Side-by-Side Artifact Viewer Panel
+             ====================================================================== -->
+        <aside id="artifact-pane" class="artifact-pane closed">
+          
+          <!-- Artifact Header -->
+          <div class="artifact-header">
+            <div class="artifact-meta">
+              <span id="artifact-header-icon" class="material-symbols-outlined">code</span>
+              <div>
+                <h3 id="artifact-title">Landing Page Concept</h3>
+                <span id="artifact-badge" class="artifact-badge">HTML / CSS Artifact</span>
+              </div>
+            </div>
+
+            <div class="artifact-actions">
+              <!-- Segmented Preview/Code Toggle -->
+              <div class="segmented-toggle">
+                <button id="btn-artifact-preview-tab" class="segmented-btn active">Preview</button>
+                <button id="btn-artifact-code-tab" class="segmented-btn">Code</button>
+              </div>
+
+              <button id="btn-copy-artifact" class="btn-icon" title="Copy code">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+              <button id="btn-download-artifact" class="btn-icon" title="Download file">
+                <span class="material-symbols-outlined">download</span>
+              </button>
+              <button id="btn-close-artifact" class="btn-icon" title="Close panel">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Artifact Body Views -->
+          <div id="artifact-body" class="artifact-body hide-scrollbar">
+            
+            <div class="sandbox-tag">
+              <span class="material-symbols-outlined" style="font-size: 16px;">lock</span>
+              <span>Sandboxed Preview</span>
+            </div>
+
+            <!-- View Mode 1: HTML Sandboxed Browser Mockup -->
+            <div id="artifact-browser-mockup" class="browser-mockup">
+              <div class="browser-bar">
+                <div class="browser-dots">
+                  <div class="browser-dot"></div>
+                  <div class="browser-dot"></div>
+                  <div class="browser-dot"></div>
+                </div>
+                <div class="browser-address">localhost:3000/preview</div>
+              </div>
+              <iframe id="artifact-sandbox-iframe" class="browser-frame" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+            </div>
+
+            <!-- View Mode 2: Markdown Rendered Container -->
+            <div id="artifact-markdown-view" class="markdown-view-container" style="display: none;">
+              <!-- Rendered Markdown HTML -->
+            </div>
+
+            <!-- View Mode 3: Code View -->
+            <pre id="artifact-code-view" class="code-view-container hide-scrollbar" style="display: none;"><code id="artifact-code-content"></code></pre>
+
+            <!-- View Mode 4: Blocked / Security Warning State -->
+            <div id="artifact-blocked-view" class="blocked-card" style="display: none;">
+              <div class="blocked-icon-circle">
+                <span class="material-symbols-outlined" style="font-size: 32px;">shield</span>
+              </div>
+              <h4 class="blocked-headline">Rendering Blocked</h4>
+              <p class="blocked-highlight">Content Security Policy Enforced</p>
+              <p class="blocked-desc">
+                This artifact contains external script resources that cannot be safely executed inside the sandboxed iframe.
+              </p>
+              <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-blocked-view-code" class="btn-secondary-action" style="width: auto;">View Raw Code</button>
+                <button id="btn-blocked-download" class="btn-primary-action" style="width: auto;">Download Safely</button>
+              </div>
+            </div>
+
+            <!-- View Mode 5: Loading / Creating Shimmer State -->
+            <div id="artifact-loading-overlay" class="artifact-loading-overlay" style="display: none;">
+              <div class="pulse-dots-group">
+                <div class="pulse-dot-item"></div>
+                <div class="pulse-dot-item"></div>
+                <div class="pulse-dot-item"></div>
+              </div>
+              <div class="loading-headline">Creating artifact...</div>
+              <div id="artifact-loading-subtext" class="loading-subtext">Structuring marketing strategy</div>
+            </div>
+
+          </div>
+
+          <!-- Artifact Footer Status Bar -->
+          <div class="artifact-footer-status">
+            <span id="artifact-status-format">Format: HTML5 / CSS3</span>
+            <span id="artifact-status-ready">Status: Ready</span>
+          </div>
+        </aside>
+
+        <!-- ======================================================================
+             C. Knowledge Base View Screen
+             ====================================================================== -->
+        <section id="knowledge-base-view" class="knowledge-base-view">
+          <div class="kb-container">
+            
+            <div class="kb-header-row">
+              <div class="kb-header-text">
+                <h2 class="kb-title">Knowledge Base</h2>
+                <p class="kb-subtitle">
+                  The central semantic vector index of podcast transcripts and PM growth frameworks powering grounded insights.
+                </p>
+              </div>
+              <div class="kb-header-actions">
+                <button id="btn-trigger-kb-sync-top" class="btn-primary-action kb-add-btn">
+                  <span class="material-symbols-outlined">sync</span>
+                  <span>Sync Knowledge Base</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Ready State Container -->
+            <div id="kb-ready-state">
+              <div class="kb-grid">
+                
+                <!-- Left: Status & Sync Control -->
+                <div class="kb-card">
+                  <div class="kb-status-header">
+                    <div class="kb-status-dot"></div>
+                    <div class="kb-status-text">Active & Grounded</div>
+                  </div>
+                  <p class="kb-status-desc">
+                    Your single knowledge base is active and grounded. The LLM queries this vector store to cite verified quotes, guests, and frameworks.
+                  </p>
+                  <button id="btn-trigger-kb-sync" class="btn-primary-action">
+                    <span class="material-symbols-outlined">sync</span>
+                    <span>Sync Knowledge Base (Manual Trigger)</span>
+                  </button>
+                  <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <button id="btn-test-uninit-kb" class="btn-secondary-action">
+                      <span class="material-symbols-outlined">published_with_changes</span>
+                      <span>Switch State (Test Uninitialized)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Right: Stats & Connected Details -->
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  
+                  <div class="kb-stats-row">
+                    <div class="stat-box">
+                      <div class="stat-header">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">podcasts</span>
+                        <span>Indexed Content</span>
+                      </div>
+                      <div id="kb-stat-episodes" class="stat-value">142</div>
+                      <div class="stat-label">Episodes fully transcribed</div>
+                    </div>
+
+                    <div class="stat-box">
+                      <div class="stat-header">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">schedule</span>
+                        <span>Last Synchronized</span>
+                      </div>
+                      <div id="kb-stat-sync-time" class="stat-value" style="font-size: 24px; padding-top: 6px;">2 hours ago</div>
+                      <div class="stat-label">Sync Mode: Manual Trigger Only</div>
+                    </div>
+                  </div>
+
+                  <!-- Connected Store Details Card -->
+                  <div class="kb-card">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 14px;">Knowledge Store Configuration</h3>
+                    
+                    <div class="kb-source-card" style="border: none; background: transparent; padding: 0;">
+                      <div class="kb-source-icon" style="background-color: var(--secondary-container); color: var(--on-secondary-container);">
+                        <span class="material-symbols-outlined">library_books</span>
+                      </div>
+                      <div class="kb-source-info">
+                        <h4>Lenny's Podcast Transcripts & PM Archive</h4>
+                        <p>Complete verbatim transcripts, timestamps, guest profiles, and growth loop case studies.</p>
+                        <div class="kb-source-meta">
+                          <span class="kb-source-meta-tag">
+                            <span class="material-symbols-outlined" style="font-size: 14px; color: var(--success);">check_circle</span>
+                            1.8M Tokens Indexed
+                          </span>
+                          <span>•</span>
+                          <span>Embeddings: text-embedding-3-small</span>
+                          <span>•</span>
+                          <span>Manual Sync Pipeline</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- Searchable Transcripts & Episodes Explorer -->
+              <div class="kb-transcripts-section">
+                <div class="kb-transcripts-header">
+                  <div>
+                    <h3 style="font-family: var(--font-serif); font-size: 22px; font-weight: 600;">Indexed Transcripts Explorer</h3>
+                    <p style="font-size: 13px; color: var(--on-surface-variant); margin-top: 2px;">Browse verified quotes and timestamp references available to the LLM.</p>
+                  </div>
+                  <div class="kb-search-box">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" id="kb-search-input" placeholder="Search guests, topics (PMF, retention, PLG)..." />
+                  </div>
+                </div>
+
+                <div id="kb-transcripts-grid" class="kb-transcripts-grid">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Syncing State Screen -->
+            <div id="kb-syncing-state" style="display: none;">
+              <div class="sync-progress-card">
+                <h3 style="font-family: var(--font-serif); font-size: 24px; font-weight: 600; text-align: center;">Syncing Knowledge Base</h3>
+                <p style="text-align: center; color: var(--on-surface-variant); font-size: 14px; margin-top: 4px;">
+                  Please wait while your workspace is updated with the latest transcript embeddings.
+                </p>
+
+                <div class="sync-bar-track">
+                  <div id="kb-sync-bar-fill" class="sync-bar-fill" style="width: 25%;"></div>
+                </div>
+
+                <div class="sync-step-list">
+                  <div id="sync-step-1" class="sync-step-item done">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--success);">check_circle</span>
+                    <span>1. Checking for remote changes</span>
+                  </div>
+                  <div id="sync-step-2" class="sync-step-item active">
+                    <span class="material-symbols-outlined spinner-icon" style="font-size: 18px;">sync</span>
+                    <span>2. Downloading new episode transcripts</span>
+                  </div>
+                  <div id="sync-step-3" class="sync-step-item">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">radio_button_unchecked</span>
+                    <span>3. Processing embeddings & chunks</span>
+                  </div>
+                  <div id="sync-step-4" class="sync-step-item">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">radio_button_unchecked</span>
+                    <span>4. Updating vector search index</span>
+                  </div>
+                </div>
+
+                <div style="margin-top: 24px; text-align: center;">
+                  <button id="btn-cancel-sync" class="btn-secondary-action" style="display: inline-flex; width: auto; padding: 8px 20px;">
+                    Cancel Sync
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Uninitialized State Screen -->
+            <div id="kb-uninitialized-state" style="display: none;">
+              <div class="uninitialized-canvas">
+                <div class="uninit-icon-box">
+                  <span class="material-symbols-outlined">library_books</span>
+                </div>
+                <h3 style="font-family: var(--font-serif); font-size: 26px; font-weight: 600; margin-bottom: 8px;">
+                  Knowledge Base Not Initialized
+                </h3>
+                <p style="color: var(--on-surface-variant); font-size: 15px; margin-bottom: 24px; line-height: 1.5;">
+                  To unlock grounded answers and citations from Lenny's Podcast, index the local transcripts repository.
+                </p>
+                <button id="btn-initialize-kb" class="btn-primary-action" style="width: auto; padding: 12px 28px;">
+                  <span class="material-symbols-outlined">bolt</span>
+                  <span>Initialize Knowledge Base</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- ==========================================================================
+         3. Modals & Overlays
+         ========================================================================== -->
+
+    <!-- Source Detail Modal -->
+    <div id="modal-source-detail" class="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: var(--primary);">format_quote</span>
+            <h3 id="modal-source-guest">Source Citation</h3>
+          </div>
+          <button class="btn-icon modal-close-btn">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="background-color: var(--surface-container); border-left: 3px solid var(--primary); padding: 16px; border-radius: var(--radius-sm); margin-bottom: 18px;">
+            <p id="modal-source-excerpt" style="font-family: var(--font-serif); font-size: 16px; font-style: italic; line-height: 1.6; color: var(--on-surface);">
+              "Excerpt will appear here"
+            </p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Episode Reference</label>
+            <div id="modal-source-episode" style="font-weight: 600; font-size: 14px;">Episode Title</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Timestamp Marker</label>
+            <div id="modal-source-timestamp" style="font-family: var(--font-mono); font-size: 13px; color: var(--primary);">24:18</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Topics Covered</label>
+            <div id="modal-source-topics" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <!-- Topic badges -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a id="modal-source-link" href="#" target="_blank" rel="noreferrer" class="btn-primary-action" style="width: auto;">
+            <span class="material-symbols-outlined">open_in_new</span>
+            <span>Listen to Episode</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Settings Modal -->
+    <div id="modal-settings" class="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Model & Workspace Settings</h3>
+          <button class="btn-icon modal-close-btn">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Default LLM Provider</label>
+            <select id="settings-provider-select" class="form-control">
+              <option value="ollama">Ollama Local</option>
+              <option value="cloud" selected>Cloud Provider</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ollama Local Endpoint</label>
+            <input type="text" id="settings-ollama-url" class="form-control" value="http://localhost:11434">
+          </div>
+          <div class="form-group">
+            <label class="form-label">FastAPI Backend URL (REST & SSE)</label>
+            <input type="text" id="settings-fastapi-url" class="form-control" value="http://localhost:8000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Simulate Ollama Offline / Error</label>
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer;">
+              <input type="checkbox" id="settings-toggle-offline">
+              <span>Mark Ollama Local as Unavailable (Tests error fallback UI)</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-settings" class="btn-primary-action" style="width: auto;">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Unavailable Error Modal -->
+    <div id="modal-model-error" class="modal-backdrop">
+      <div class="modal-dialog" style="max-width: 440px;">
+        <div class="modal-body" style="text-align: center; padding-top: 32px;">
+          <div style="width: 56px; height: 56px; border-radius: 50%; background-color: var(--error-container); color: var(--on-error-container); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <span class="material-symbols-outlined" style="font-size: 30px;">cloud_off</span>
+          </div>
+          <h3 style="font-family: var(--font-serif); font-size: 22px; font-weight: 600; margin-bottom: 8px;">
+            Ollama Local is Unavailable
+          </h3>
+          <p style="font-size: 14px; color: var(--on-surface-variant); line-height: 1.5; margin-bottom: 24px;">
+            Ollama Local is currently unreachable. Please check your local server configuration or switch to a Cloud model to continue your workflow.
+          </p>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-error-retry" class="btn-secondary-action" style="flex: 1;">Retry</button>
+            <button id="btn-error-switch-cloud" class="btn-primary-action" style="flex: 1;">Switch to Cloud</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Knowledge Base Source Modal -->
+    <div id="modal-add-kb" class="modal-backdrop">
+      <div class="modal-dialog" style="max-width: 580px;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: var(--primary);">library_add</span>
+            <h3>Add Knowledge Base Source</h3>
+          </div>
+          <button class="btn-icon modal-close-btn">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          
+          <!-- Source Type Selector Tabs -->
+          <div class="modal-type-tabs">
+            <button type="button" class="modal-tab-item active" data-type="podcast">
+              <span class="material-symbols-outlined">podcasts</span>
+              <span>Podcast / RSS</span>
+            </button>
+            <button type="button" class="modal-tab-item" data-type="upload">
+              <span class="material-symbols-outlined">upload_file</span>
+              <span>File Upload</span>
+            </button>
+            <button type="button" class="modal-tab-item" data-type="newsletter">
+              <span class="material-symbols-outlined">mark_email_read</span>
+              <span>Substack / URL</span>
+            </button>
+            <button type="button" class="modal-tab-item" data-type="notes">
+              <span class="material-symbols-outlined">description</span>
+              <span>Raw Notes</span>
+            </button>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="form-group" style="margin-top: 18px;">
+            <label class="form-label">Source Name</label>
+            <input type="text" id="add-kb-name" class="form-control" placeholder="e.g. Lenny's Guest Deep Dives (2025)" required />
+          </div>
+
+          <!-- Type specific input panel: URL / RSS -->
+          <div id="panel-type-url" class="type-input-panel">
+            <div class="form-group">
+              <label class="form-label">Feed / Episode Archive URL</label>
+              <input type="url" id="add-kb-url" class="form-control" placeholder="https://www.lennyspodcast.com/episodes/rss.xml" />
+            </div>
+          </div>
+
+          <!-- Type specific input panel: File Upload -->
+          <div id="panel-type-upload" class="type-input-panel" style="display: none;">
+            <div class="form-group">
+              <label class="form-label">Upload Transcripts (.txt, .md, .pdf, .json)</label>
+              <div id="kb-dropzone" class="upload-dropzone">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: var(--primary);">cloud_upload</span>
+                <p style="font-size: 14px; font-weight: 500; margin-top: 8px;">Drag & drop transcripts here, or <span style="color: var(--primary); text-decoration: underline; cursor: pointer;">browse files</span></p>
+                <p style="font-size: 12px; color: var(--on-surface-variant); margin-top: 4px;">Supports single or batch interview transcript files</p>
+                <input type="file" id="kb-file-input" style="display: none;" multiple accept=".txt,.md,.json,.pdf,.csv" />
+                <div id="kb-file-preview" class="file-preview-pill" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Type specific input panel: Raw Notes -->
+          <div id="panel-type-notes" class="type-input-panel" style="display: none;">
+            <div class="form-group">
+              <label class="form-label">Paste Raw Interview Text / Notes</label>
+              <textarea id="add-kb-notes" class="form-control" style="height: 110px; resize: vertical;" placeholder="Paste interview transcript excerpt, speaker notes, or executive summary..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description & Topic Tags</label>
+            <input type="text" id="add-kb-desc" class="form-control" placeholder="e.g. Product strategy, monetization loops, hiring PMs" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Estimated Episodes / Files</label>
+            <input type="number" id="add-kb-count" class="form-control" value="12" min="1" max="1000" />
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary-action modal-close-btn" style="width: auto;">Cancel</button>
+          <button type="button" id="btn-submit-add-kb" class="btn-primary-action" style="width: auto;">
+            <span class="material-symbols-outlined">bolt</span>
+            <span>Index & Add Source</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+  </div>
+
+  <!-- Vanilla JavaScript Application Logic -->
+  <script type="module" src="./js/app.js?v=2"></script>
+</body>
+</html>
