@@ -46,7 +46,7 @@
 ---
 
 ## 3. Database Schema (`postgresql+pgvector`)
-
+using supabase URI 
 ### `knowledge_documents`
 Tracks canonical ingested transcript files from GitHub.
 
@@ -152,7 +152,7 @@ CREATE TABLE generated_artifacts (
      provider == "cloud"                           provider == "ollama"
                 │                                             │
       Call Google Gemini API                       Call Local Ollama API
-   (gemini-3.6-flash / 2.0-flash)                    (llama3.1:8b)
+   (gemini-3.6-flash )                                (llama3.1:8b)
 ```
 
 ---
