@@ -57,6 +57,13 @@ services:
       PROJECT_NAME: ${PROJECT_NAME:-The Lenny Growth Assistant}
       PORT: ${PORT:-8000}
       AGENT_VERBOSE: ${AGENT_VERBOSE:-1}
+      PI_AGENT_PORT: ${PI_AGENT_PORT:-8001}
+      PI_AGENT_URL: http://127.0.0.1:${PI_AGENT_PORT:-8001}
+      PI_AGENT_TIMEOUT_SECONDS: ${PI_AGENT_TIMEOUT_SECONDS:-120}
+      PI_AGENT_REQUEST_TIMEOUT_MS: ${PI_AGENT_REQUEST_TIMEOUT_MS:-110000}
+      FASTAPI_INTERNAL_URL: http://127.0.0.1:8000
+      INTERNAL_TOOL_TOKEN: ${INTERNAL_TOOL_TOKEN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/oogwayylabs}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
@@ -102,4 +109,3 @@ volumes:
 networks:
   oogwayylabs-net:
     driver: bridge
-
