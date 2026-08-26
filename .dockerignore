@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+frontend/node_modules/
+pi_agent/node_modules/
+pi_agent/node_modules/
+data/
+agent-transcripts/
