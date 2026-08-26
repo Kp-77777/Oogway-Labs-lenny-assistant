@@ -1,13 +1,13 @@
+FROM node:22.19-bookworm-slim AS node
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install Node.js for persistent Pi Agent runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nodejs \
-    npm \
-    && rm -rf /var/lib/apt/lists/*
+# Pi Agent packages require Node 22.19+. Copy the runtime from the official
+# image instead of using the older Debian package.
+COPY --from=node /usr/local /usr/local
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Node dependencies for Pi Agent
 COPY pi_agent/package*.json /opt/pi_agent/
-RUN cd /opt/pi_agent && npm install --omit=dev --no-audit --no-fund
+RUN cd /opt/pi_agent && npm ci --omit=dev --no-audit --no-fund
 
 # Copy application source
 COPY backend/ /app/
