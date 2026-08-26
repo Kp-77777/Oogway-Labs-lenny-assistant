@@ -1,0 +1,105 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: oogwayylabs-ollama
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+    volumes:
+      - ollama_data:/root/.ollama
+    command: >
+      sh -c "ollama serve &
+      sleep 10 &&
+      ollama pull $${OLLAMA_MODEL:-llama3.1:8b} &&
+      wait"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - oogwayylabs-net
+
+  postgres:
+    image: pgvector/pgvector:pg16-latest
+    container_name: oogwayylabs-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: oogwayylabs
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oogwayylabs-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oogwayylabs-backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      PROJECT_NAME: ${PROJECT_NAME:-The Lenny Growth Assistant}
+      PORT: ${PORT:-8000}
+      AGENT_VERBOSE: ${AGENT_VERBOSE:-1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/oogwayylabs}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.0-flash}
+      GEMINI_CHAT_FALLBACK_MODELS: ${GEMINI_CHAT_FALLBACK_MODELS:-gemini-1.5-flash,gemini-1.5-pro}
+      GEMINI_EMBED_MODEL: ${GEMINI_EMBED_MODEL:-gemini-embedding-001}
+      GEMINI_EMBED_FALLBACK_MODELS: ${GEMINI_EMBED_FALLBACK_MODELS:-text-embedding-004}
+      VECTOR_DIMENSIONS: ${VECTOR_DIMENSIONS:-3072}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      TRANSCRIPTS_GITHUB_REPO: ${TRANSCRIPTS_GITHUB_REPO:-ChatPRD/lennys-podcast-transcripts}
+      TRANSCRIPTS_GITHUB_PATH: ${TRANSCRIPTS_GITHUB_PATH:-episodes}
+      TRANSCRIPTS_GITHUB_BRANCH: ${TRANSCRIPTS_GITHUB_BRANCH:-main}
+      INGEST_MAX_EPISODES: ${INGEST_MAX_EPISODES:-0}
+      RAG_TOP_K: ${RAG_TOP_K:-6}
+      CHUNK_SIZE: ${CHUNK_SIZE:-1500}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-150}
+      RAG_SIMILARITY_THRESHOLD: ${RAG_SIMILARITY_THRESHOLD:-0.45}
+    volumes:
+      - ./backend:/app
+      - ./start.sh:/app/start.sh
+    networks:
+      - oogwayylabs-net
+
+  frontend:
+    image: nginx:alpine
+    container_name: oogwayylabs-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - oogwayylabs-net
+
+volumes:
+  ollama_data:
+  postgres_data:
+
+networks:
+  oogwayylabs-net:
+    driver: bridge
+
